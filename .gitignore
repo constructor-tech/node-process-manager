@@ -106,5 +106,5 @@ dist
 
 #custom
 toLinux.bat
-toWindows.bat
+toWin.bat
 Sample Process.exe
