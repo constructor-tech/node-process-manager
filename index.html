@@ -4,29 +4,21 @@
     <meta charset="UTF-8">
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
-    <title>Hello World!</title>
+    <title>node-task</title>
     <link rel="stylesheet" type="text/css" href='styles.css'>
   </head>
   <body>
     <input type="hidden" id="name" value="">
     <button type="button" id="start">Start</button>
-<!-- Trigger/Open The Modal -->
-<button id="myBtn">Search in page</button>
-
-<!-- The Modal -->
-<div id="myModal" class="modal">
-
-  <!-- Modal content -->
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <input id="searchVal">
-    <button type="button" id="search">Search</button>
-  </div>
-
-</div>
-
-    <table id="out">
-    </table>
+    <button id="searchButton">Search in page</button>
+    <div id="searchModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <input id="searchVal">
+        <button type="button" id="search">Search</button>
+    </div>
+    </div>
+    <table id="out"></table>
     <script src='renderer.js'></script>
   </body>
 </html>

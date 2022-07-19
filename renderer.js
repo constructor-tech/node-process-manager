@@ -42,10 +42,10 @@ out.addEventListener('click', async (evt) => {
 })
 
 // Get the modal
-var modal = document.getElementById("myModal");
+var modal = document.getElementById("searchModal");
 
 // Get the button that opens the modal
-var btn = document.getElementById("myBtn");
+var btn = document.getElementById("searchButton");
 var search = document.getElementById("search");
 var searchVal = document.getElementById("searchVal")
 
