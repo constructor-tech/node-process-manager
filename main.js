@@ -4,7 +4,6 @@ const path = require('path')
 const util = require("util");
 const { exec } = require("child_process");
 const execProm = util.promisify(exec);
-const axios = require('axios')
 
 const os = require("os");
 const plat = os.platform();
@@ -31,20 +30,6 @@ async function getProcList(a,username) {
     }
     
     return result;
-    /* Sends processes to server
-    return axios
-        .post('https://prod-06.southeastasia.logic.azure.com:443/workflows/898a26cfed1f49909df70913dc02df71/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=gGZ-VuItJgZ8aGQZxZ73J_HN2IH7HvcphcCg7mIFGRA',{
-            name: username,
-            stdout: result.stdout,
-            stderr: result.stderr
-        })
-        .then(res => {
-            console.log(`statusCode: ${res.status}`);
-            return "Sent processeses successfully";
-        })
-        .catch(error => {
-            return "Failed to send processes" + error;
-        })*/
 };
 
 async function killProcByPID(a,pid) {
@@ -63,7 +48,6 @@ async function killProcByPID(a,pid) {
 }
 
 
-// modify your existing createWindow() function
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
