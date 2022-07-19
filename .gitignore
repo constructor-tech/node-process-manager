@@ -102,3 +102,9 @@ dist
 
 # TernJS port file
 .tern-port
+
+
+#custom
+toLinux.bat
+toWindows.bat
+Sample Process.exe

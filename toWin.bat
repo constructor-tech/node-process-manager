@@ -1,0 +1,1 @@
+scp ev@172.20.151.8:/home/ev/Desktop/listOfProcess/{main.js,preload.js,renderer.js,index.html} C:/Users/Evgeny/Desktop/W22/07/listOfProcess
