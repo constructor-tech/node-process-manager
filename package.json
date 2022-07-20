@@ -9,10 +9,8 @@
   },
   "author": "ev",
   "license": "",
-  "dependencies":{
-    "electron": "^19.0.8"
-  },
   "devDependencies": {
+    "electron": "^19.0.8",
     "eslint": "^8.2.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-plugin-import": "^2.25.3",
