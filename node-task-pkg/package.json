@@ -1,24 +1,24 @@
 {
-   "name":"node-task-mgr",
-   "version":"1.0.1",
-   "description":"A cross-platform node module that provides tools to get running process info",
-   "main":"index.js",
-   "scripts":{
-      "test":"echo \"Error: no test specified\" && exit 1"
+   "name": "node-task-mgr",
+   "version": "1.0.2",
+   "description": "A cross-platform node module that provides tools to get and kill running process info",
+   "main": "index.js",
+   "repository": {
+      "type": "git",
+      "url": "git+https://github.com/evgeny-w/node-task.git"
    },
-   "repository":{
-      "type":"git",
-      "url":"git+https://github.com/evgeny-w/node-task.git"
-   },
-   "keywords":[
+   "keywords": [
       "task",
       "task-manager",
       "electron"
    ],
-   "author":"Evgeny",
-   "license":"MIT",
-   "bugs":{
-      "url":"https://github.com/evgeny-w/node-task/issues"
+   "author": "Evgeny",
+   "license": "MIT",
+   "bugs": {
+      "url": "https://github.com/evgeny-w/node-task/issues"
    },
-   "homepage":"https://github.com/evgeny-w/node-task#readme"
+   "homepage": "https://github.com/evgeny-w/node-task#readme",
+   "devDependencies": {
+      "typescript": "^4.7.4"
+   }
 }
