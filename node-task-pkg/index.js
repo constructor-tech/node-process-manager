@@ -8,34 +8,23 @@ const os = require('os');
 const plat = os.platform();
 
 /**
+ * @typedef {Object} ProcessOutputFormat
+ * @property {Array.<string[]>} processes - List of processes
+ * @property {string} error - Any error(s) encountered
+ */
+/**
+ * @typedef {Object} KillOutputFormat
+ * @property {string} result - Result of the operation
+ * @property {string} error - Any error(s) encountered
+ */
+
+/**
  * Thrown as an exception for unsupported systems
  * @constructor
- * @returns {String} stderr
+ * @returns {String} stderr:'Operating system not supported'
  */
 function OperatingSystemNotSupportedException() {
   this.stderr = 'Operating system not supported';
-}
-
-/**
- * Return value for getProcList function
- * @constructor
- * @returns {String} processes
- * @returns {String} error
- */
-function ProcessOutputFormat() {
-  this.processes = '';
-  this.error = '';
-}
-
-/**
- * Return value for killProcByPID function
- * @constructor
- * @returns {String} result
- * @returns {String} error
- */
-function KillOutputFormat() {
-  this.result = '';
-  this.error = '';
 }
 
 /**
@@ -52,39 +41,40 @@ function KillOutputFormat() {
  * getProcList();
  * @example
  * // returns {
- * //     processes: 'ERROR',
+ * //     processes: null,
  * //     error: 'Operating system not supported'
  * //   }
  * getProcList();
  * @returns {ProcessOutputFormat} Returns the list of processes or any errors encountered.
  */
 exports.getProcList = async () => {
-  const output = new ProcessOutputFormat();
-  let result = { stdout: '', stderr: '' };
+  let result;
   try {
-    let i;
     switch (plat) {
       case 'win32':
         result = await execProm('C:/Windows/System32/tasklist.exe /FO CSV');
-        output.processes = result.stdout.trim().split('\r\n').map(x => x.replace(/"/g, '').trim().split(',').slice(0, 2).reverse());
+        result.stdout = result.stdout.trim().split('\r\n').map((x) => x.slice(1).trim().split('","').slice(0, 2).reverse()); //Fixed vulnerabilty of having commas in filename
         break;
       case 'linux':
-        result = await execProm("ps -e -o pid,command | awk '{printf \"%s,\",$1;$1=\"\";print substr($0,2)}'");
-        output.processes = result.stdout.trim().split('\n').map(x => x).trim().split(',');
+        result = await execProm("ps -e -ww -o pid,command | awk '{printf \"%s,/\",$1;$1=\"\";print substr($0,2)}'"); //Fixed vulnerability by making delimiter impossible to name
+        result.stdout = result.stdout.trim().split('\n').map((x) => x.trim().split(/\/(.*)/s).slice(0,2));
         break;
       case 'darwin':
-        result = await execProm("ps -ec -o pid,command | awk '{printf \"%s,\",$1;$1=\"\";print substr($0,2)}'");
-        output.processes = result.stdout.trim().split('\n').map(x => x.trim().split(','));
+        result = await execProm("ps -ec -o pid,command | awk '{printf \"%s,\",$1;$1=\"\";print substr($0,2)}'"); //TODO: same fix as for linux
+        result.stdout = result.stdout.trim().split('\n').map((x) => x.trim().split(','));
         break;
       default:
         throw new OperatingSystemNotSupportedException();
     }
   } catch (ex) {
-    output.processes = 'ERROR';
-    output.error = ex.stderr;
+    if (ex.stderr !== undefined){
+      return { processes: null, error: ex.stderr }; //Not an empty list to keep it consistent between functions
+    } else {
+      return { processes: null, error: ex };
+    }
   }
 
-  return output;
+  return { processes: result.stdout, error: result.stderr };
 };
 
 /**
@@ -97,27 +87,39 @@ exports.getProcList = async () => {
  * killProcByPID(2696);
  * @example
  * // returns {
- * //     processes: 'ERROR',
+ * //     result: null,
  * //     error: 'ERROR: The process ... could not be terminated ...'
  * //   }
  * killProcByPID(0);
  * @example
  * // returns {
- * //     processes: 'ERROR',
+ * //     result: null,
  * //     error: 'ERROR: The process ... not found.'
  * //   }
  * killProcByPID(-5);
  * @example
  * // returns {
- * //     processes: 'ERROR',
+ * //     result: null,
  * //     error: 'Operating system not supported'
  * //   }
  * killProcByPID(2696);
- * @returns {ProcessOutputFormat} Returns the list of processes or any errors encountered.
+ * @example
+ * // returns {
+ * //     result: null,
+ * //     error: 'PID is not a number'
+ * //   }
+ * killProcByPID('five');
+ * @example
+ * // On Unix:
+ * // returns {result:'',error:''}
+ * killProcByPID('5321');
+ * @returns {KillOutputFormat} Returns whether the operation was successful
  */
 exports.killProcByPID = async (pid) => {
-  const output = new KillOutputFormat();
-  let result = { stdout: '', stderr: '' };
+  if (isNaN(pid)){ //Check for security reasons
+    return { result: null, error: 'PID is not a number' };
+  }
+  let result;
   try {
     switch (plat) {
       case 'win32':
@@ -130,16 +132,15 @@ exports.killProcByPID = async (pid) => {
       default:
         throw new OperatingSystemNotSupportedException();
     }
-    output.result = result.stdout;
   } catch (ex) {
-    output.result = 'ERROR';
-    output.error = ex.stderr;
+    return { result: null, error: ex.stderr };
   }
-  return output;
+  return { result: result.stdout, error: result.stderr };
 };
 
+
 exports.getProcList().then((result) => {
-  console.log(result);
+  console.log(result.processes.slice(-100));
 });
 
 process.stdin.setEncoding('utf8');
