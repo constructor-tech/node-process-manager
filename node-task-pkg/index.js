@@ -53,7 +53,7 @@ exports.getProcList = async () => {
     switch (plat) {
       case 'win32':
         result = await execProm('C:/Windows/System32/tasklist.exe /FO CSV');
-        result.stdout = result.stdout.trim().split('\r\n').map((x) => x.slice(1).trim().split('","').slice(0, 2).reverse()); //Fixed vulnerabilty of having commas in filename
+        result.stdout = result.stdout.trim().split('\r\n').map((x) => x.slice(1).trim().split('","').slice(0, 2).reverse());
         break;
       case 'linux':
         result = await execProm("ps -e -ww -o pid,command | awk '{printf \"%s,/\",$1;$1=\"\";print substr($0,2)}'"); //Fixed vulnerability by making delimiter impossible to name
@@ -138,7 +138,7 @@ exports.killProcByPID = async (pid) => {
   return { result: result.stdout, error: result.stderr };
 };
 
-
+/*
 exports.getProcList().then((result) => {
   console.log(result.processes.slice(-100));
 });
@@ -153,3 +153,4 @@ process.stdin.on('readable', () => {
     });
   }
 });
+*/
