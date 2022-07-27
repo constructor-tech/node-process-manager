@@ -7,6 +7,9 @@ const os = require('os');
 
 const plat = os.platform();
 
+const { readdir } = require('node:fs/promises');
+const { readFile } = require('node:fs/promises');
+
 /**
  * @typedef {Object} ProcessOutputFormat
  * @property {Array.<string[]>} processes - List of processes
@@ -28,11 +31,54 @@ function OperatingSystemNotSupportedException() {
 }
 
 /**
+ * Gets a list of processes from a linux system
+ * @example
+ * // returns {
+ * //     processes: [
+ * //       [ 1, '/sbin/init\x00splash' ],
+ * //       ... more items
+ * //     ],
+ * //     error: ''
+ * //   }
+ * getProcList();
+ * @returns {ProcessOutputFormat} Returns the list of processes or any errors encountered.
+ */
+async function getLinuxProc() {
+  const out = [];
+  try {
+    const files = await readdir('/proc/');
+    const promises = [];
+    for (let i = 0; i < files.length; i += 1) {
+      const file = files[i];
+      if (file[0] >= '0' && file[0] <= '9') {
+        if (!Number.isNaN(parseInt(file, 10))) {
+          const statPath = `/proc/${file}/cmdline`;
+          promises.push(readFile(statPath, 'utf-8').then(async (data) => {
+            try {
+              const dataBytes = data.slice(0, -1);
+              if (dataBytes !== '') {
+                out.push([file, dataBytes]);
+              }
+            } catch (err) {
+              // If error here, process probably does not exist anymore
+            }
+          }));
+        }
+      }
+    }
+    await Promise.all(promises); // Solution to avoid await in loop
+  } catch (err) {
+    return { processes: null, error: err };
+  }
+  return { processes: out, error: null };
+}
+
+/**
  * Gets a list of processes from the operating system
  * @example
  * // returns {
  * //     processes: [
- * //       ['PID','Image Name'],
+ * //       ['PID','Image Name'], //TODO: This line needs to be removed in mac
  * //       ['0','System Idle Process'],
  * //       ... more items
  * //     ],
@@ -54,13 +100,12 @@ exports.getProcList = async () => {
       case 'win32':
         result = await execProm('C:/Windows/System32/tasklist.exe /FO CSV');
         return {
-          processes: result.stdout.trim().split('\r\n').map((x) => x.slice(1).trim().split('","').slice(0, 2)
+          processes: result.stdout.trim().split('\r\n').slice(1).map((x) => x.slice(1).trim().split('","').slice(0, 2)
             .reverse()),
           error: result.stderr,
         };
       case 'linux':
-        result = await execProm("ps -e -ww -o pid,command | awk '{printf \"%s,/\",$1;$1=\"\";print substr($0,2)}'"); // Fixed vulnerability by making delimiter impossible to name
-        return { processes: result.stdout.trim().split('\n').map((x) => x.trim().split(/\/(.*)/s).slice(0, 2)), error: result.stderr };
+        return await getLinuxProc();
       case 'darwin':
         result = await execProm("ps -ec -o pid,command | awk '{printf \"%s,\",$1;$1=\"\";print substr($0,2)}'"); // TODO: same fix as for linux
         return { processes: result.stdout.trim().split('\n').map((x) => x.trim().split(',')), error: result.stderr };
@@ -136,9 +181,9 @@ exports.killProcByPID = async (pid) => {
   return { result: result.stdout, error: result.stderr };
 };
 
-//exports.getProcList().then((result) => {
-//  console.log(result.processes.slice(-100));
-//});
+// exports.getProcList().then((result) => {
+//  console.log(result.processes);
+// });
 /*
 process.stdin.setEncoding('utf8');
 let name;
