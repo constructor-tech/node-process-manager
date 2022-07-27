@@ -53,31 +53,29 @@ exports.getProcList = async () => {
     switch (plat) {
       case 'win32':
         result = await execProm('C:/Windows/System32/tasklist.exe /FO CSV');
-        result.stdout = result.stdout.trim().split('\r\n').map((x) => x.slice(1).trim().split('","').slice(0, 2).reverse());
-        break;
+        return {
+          processes: result.stdout.trim().split('\r\n').map((x) => x.slice(1).trim().split('","').slice(0, 2)
+            .reverse()),
+          error: result.stderr,
+        };
       case 'linux':
-        result = await execProm("ps -e -ww -o pid,command | awk '{printf \"%s,/\",$1;$1=\"\";print substr($0,2)}'"); //Fixed vulnerability by making delimiter impossible to name
-        result.stdout = result.stdout.trim().split('\n').map((x) => x.trim().split(/\/(.*)/s).slice(0,2));
-        break;
+        result = await execProm("ps -e -ww -o pid,command | awk '{printf \"%s,/\",$1;$1=\"\";print substr($0,2)}'"); // Fixed vulnerability by making delimiter impossible to name
+        return { processes: result.stdout.trim().split('\n').map((x) => x.trim().split(/\/(.*)/s).slice(0, 2)), error: result.stderr };
       case 'darwin':
-        result = await execProm("ps -ec -o pid,command | awk '{printf \"%s,\",$1;$1=\"\";print substr($0,2)}'"); //TODO: same fix as for linux
-        result.stdout = result.stdout.trim().split('\n').map((x) => x.trim().split(','));
-        break;
+        result = await execProm("ps -ec -o pid,command | awk '{printf \"%s,\",$1;$1=\"\";print substr($0,2)}'"); // TODO: same fix as for linux
+        return { processes: result.stdout.trim().split('\n').map((x) => x.trim().split(',')), error: result.stderr };
       default:
         throw new OperatingSystemNotSupportedException();
     }
   } catch (ex) {
-    if (ex.stderr !== undefined){
-      return { processes: null, error: ex.stderr }; //Not an empty list to keep it consistent between functions
-    } else {
-      return { processes: null, error: ex };
+    if (ex.stderr !== undefined) {
+      return { processes: null, error: ex.stderr }; // Not an empty list to keep it consistent
     }
+    return { processes: null, error: ex };
   }
-
-  return { processes: result.stdout, error: result.stderr };
 };
 
-/**
+/*
  * Kills a process by its PID
  * @example
  * // returns {
@@ -116,7 +114,7 @@ exports.getProcList = async () => {
  * @returns {KillOutputFormat} Returns whether the operation was successful
  */
 exports.killProcByPID = async (pid) => {
-  if (isNaN(pid)){ //Check for security reasons
+  if (Number.isNaN(parseInt(pid, 10))) { // Check for security reasons
     return { result: null, error: 'PID is not a number' };
   }
   let result;
@@ -138,11 +136,10 @@ exports.killProcByPID = async (pid) => {
   return { result: result.stdout, error: result.stderr };
 };
 
+//exports.getProcList().then((result) => {
+//  console.log(result.processes.slice(-100));
+//});
 /*
-exports.getProcList().then((result) => {
-  console.log(result.processes.slice(-100));
-});
-
 process.stdin.setEncoding('utf8');
 let name;
 process.stdin.on('readable', () => {
