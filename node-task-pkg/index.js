@@ -10,6 +10,8 @@ const plat = os.platform();
 const { readdir } = require('node:fs/promises');
 const { readFile } = require('node:fs/promises');
 
+const OSErrMsg = "Operating system is not supported"
+
 /**
  * @typedef {Object} ProcessOutputFormat
  * @property {Array.<string[]>} processes - List of processes
@@ -20,15 +22,6 @@ const { readFile } = require('node:fs/promises');
  * @property {string} result - Result of the operation
  * @property {string} error - Any error(s) encountered
  */
-
-/**
- * Thrown as an exception for unsupported systems
- * @constructor
- * @returns {String} stderr:'Operating system not supported'
- */
-function OperatingSystemNotSupportedException() {
-  this.stderr = 'Operating system not supported';
-}
 
 /**
  * Gets a list of processes from a linux system
@@ -78,7 +71,6 @@ async function getLinuxProc() {
  * @example
  * // returns {
  * //     processes: [
- * //       ['PID','Image Name'], //TODO: This line needs to be removed in mac
  * //       ['0','System Idle Process'],
  * //       ... more items
  * //     ],
@@ -94,29 +86,28 @@ async function getLinuxProc() {
  * @returns {ProcessOutputFormat} Returns the list of processes or any errors encountered.
  */
 exports.getProcList = async () => {
-  let result;
   try {
-    switch (plat) {
+    switch (plat) { //Make platform dependent ver ?
       case 'win32':
-        result = await execProm('C:/Windows/System32/tasklist.exe /FO CSV');
-        return {
-          processes: result.stdout.trim().split('\r\n').slice(1).map((x) => x.slice(1).trim().split('","').slice(0, 2)
-            .reverse()),
-          error: result.stderr,
-        };
+        const winResult = await execProm('C:/Windows/System32/tasklist.exe /FO CSV');
+        const winProcesses = winResult.stdout.trim().split('\r\n').slice(1).map((x) => x.slice(1).trim().split('","').slice(0, 2).reverse());
+        
+        return {processes: winProcesses, error: winResult.stderr};
       case 'linux':
         return await getLinuxProc();
       case 'darwin':
-        result = await execProm("ps -ec -o pid,command | awk '{printf \"%s,\",$1;$1=\"\";print substr($0,2)}'");
-        return { processes: result.stdout.trim().split('\n').slice(1).map((x) => x.trim().split(',')), error: result.stderr };
+        const macResult = await execProm("ps -ec -o pid,command | awk '{printf \"%s,\",$1;$1=\"\";print substr($0,2)}'");
+        const macProcesses = macResult.stdout.trim().split('\n').slice(1).map((x) => x.trim().split(','));
+        
+        return { processes: macProcesses, error: macResult.stderr };
       default:
-        throw new OperatingSystemNotSupportedException();
+        throw new Error(OSErrMsg);
     }
   } catch (ex) {
     if (ex.stderr !== undefined) {
       return { processes: null, error: ex.stderr };
     }
-    return { processes: null, error: ex };
+    return { processes: null, error: ex.message };
   }
 };
 
@@ -159,24 +150,29 @@ exports.getProcList = async () => {
  * @returns {KillOutputFormat} Returns whether the operation was successful
  */
 exports.killProcByPID = async (pid) => {
-  if (!Number.isInteger(parseInt(pid, 10))) {
+  pid = parseInt(pid,10);
+  if (!Number.isInteger(pid)) {
     return { result: null, error: 'PID is not a number' };
   }
-  pid = parseInt(pid,10);
+  
   try {
     switch (plat) {
       case 'win32':
-        result = await execProm(`C:/Windows/System32/taskkill /F /PID ${pid}`);
-        break;
+        const winResult = await execProm(`C:/Windows/System32/taskkill /F /PID ${pid}`);
+        
+        return { result: winResult.stdout, error: winResult.stderr };
       case 'linux':
       case 'darwin':
-        result = await execProm(`kill -9 ${pid}`);
-        break;
+        const macResult = await execProm(`kill -9 ${pid}`);
+        
+        return { result: macResult.stdout, error: macResult.stderr };
       default:
-        throw new OperatingSystemNotSupportedException();
+        throw new Error(OSErrMsg);
     }
   } catch (ex) {
-    return { result: null, error: ex.stderr };
+    if (ex.stderr !== undefined) {
+      return { result: null, error: ex.stderr };
+    }
+    return { result: null, error: ex.message };
   }
-  return { result: result.stdout, error: result.stderr };
 };
