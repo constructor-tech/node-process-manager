@@ -40,7 +40,7 @@ function OperatingSystemNotSupportedException() {
  * //     ],
  * //     error: ''
  * //   }
- * getProcList();
+ * getLinuxProc();
  * @returns {ProcessOutputFormat} Returns the list of processes or any errors encountered.
  */
 async function getLinuxProc() {
@@ -60,13 +60,13 @@ async function getLinuxProc() {
                 out.push([file, dataBytes]);
               }
             } catch (err) {
-              // If error here, process probably does not exist anymore
+              // Error here means that the process does not exist anymore
             }
           }));
         }
       }
     }
-    await Promise.all(promises); // Solution to avoid await in loop
+    await Promise.all(promises);
   } catch (err) {
     return { processes: null, error: err };
   }
@@ -107,14 +107,14 @@ exports.getProcList = async () => {
       case 'linux':
         return await getLinuxProc();
       case 'darwin':
-        result = await execProm("ps -ec -o pid,command | awk '{printf \"%s,\",$1;$1=\"\";print substr($0,2)}'"); // TODO: same fix as for linux
-        return { processes: result.stdout.trim().split('\n').map((x) => x.trim().split(',')), error: result.stderr };
+        result = await execProm("ps -ec -o pid,command | awk '{printf \"%s,\",$1;$1=\"\";print substr($0,2)}'");
+        return { processes: result.stdout.trim().split('\n').slice(1).map((x) => x.trim().split(',')), error: result.stderr };
       default:
         throw new OperatingSystemNotSupportedException();
     }
   } catch (ex) {
     if (ex.stderr !== undefined) {
-      return { processes: null, error: ex.stderr }; // Not an empty list to keep it consistent
+      return { processes: null, error: ex.stderr };
     }
     return { processes: null, error: ex };
   }
@@ -159,10 +159,10 @@ exports.getProcList = async () => {
  * @returns {KillOutputFormat} Returns whether the operation was successful
  */
 exports.killProcByPID = async (pid) => {
-  if (Number.isNaN(parseInt(pid, 10))) { // Check for security reasons
+  if (!Number.isInteger(parseInt(pid, 10))) {
     return { result: null, error: 'PID is not a number' };
   }
-  let result;
+  pid = parseInt(pid,10);
   try {
     switch (plat) {
       case 'win32':
@@ -180,19 +180,3 @@ exports.killProcByPID = async (pid) => {
   }
   return { result: result.stdout, error: result.stderr };
 };
-
-// exports.getProcList().then((result) => {
-//  console.log(result.processes);
-// });
-/*
-process.stdin.setEncoding('utf8');
-let name;
-process.stdin.on('readable', () => {
-  name = process.stdin.read();
-  if (name !== null) {
-    exports.killProcByPID(name).then((result) => {
-      console.log(result);
-    });
-  }
-});
-*/
