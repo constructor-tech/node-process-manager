@@ -10,7 +10,7 @@ const plat = os.platform();
 const { readdir } = require('node:fs/promises');
 const { readFile } = require('node:fs/promises');
 
-const OSErrMsg = "Operating system is not supported"
+const OSErrMsg = 'Operating system is not supported';
 
 /**
  * @typedef {Object} ProcessOutputFormat
@@ -87,18 +87,25 @@ async function getLinuxProc() {
  */
 exports.getProcList = async () => {
   try {
-    switch (plat) { //Make platform dependent ver ?
+    switch (plat) { // Make platform dependent ver ?
       case 'win32':
         const winResult = await execProm('C:/Windows/System32/tasklist.exe /FO CSV');
-        const winProcesses = winResult.stdout.trim().split('\r\n').slice(1).map((x) => x.slice(1).trim().split('","').slice(0, 2).reverse());
-        
-        return {processes: winProcesses, error: winResult.stderr};
+        const winProcesses = winResult.stdout.trim()
+          .split('\r\n')
+          .slice(1)
+          .map((x) => x.slice(1).trim().split('","').slice(0, 2)
+            .reverse());
+
+        return { processes: winProcesses, error: winResult.stderr };
       case 'linux':
         return await getLinuxProc();
       case 'darwin':
         const macResult = await execProm("ps -ec -o pid,command | awk '{printf \"%s,\",$1;$1=\"\";print substr($0,2)}'");
-        const macProcesses = macResult.stdout.trim().split('\n').slice(1).map((x) => x.trim().split(','));
-        
+        const macProcesses = macResult.stdout.trim()
+          .split('\n')
+          .slice(1)
+          .map((x) => x.trim().split(','));
+
         return { processes: macProcesses, error: macResult.stderr };
       default:
         throw new Error(OSErrMsg);
@@ -150,21 +157,21 @@ exports.getProcList = async () => {
  * @returns {KillOutputFormat} Returns whether the operation was successful
  */
 exports.killProcByPID = async (pid) => {
-  pid = parseInt(pid,10);
-  if (!Number.isInteger(pid)) {
+  const tempPid = parseInt(pid, 10);
+  if (!Number.isInteger(tempPid)) {
     return { result: null, error: 'PID is not a number' };
   }
-  
+
   try {
     switch (plat) {
       case 'win32':
-        const winResult = await execProm(`C:/Windows/System32/taskkill /F /PID ${pid}`);
-        
+        const winResult = await execProm(`C:/Windows/System32/taskkill /F /PID ${tempPid}`);
+
         return { result: winResult.stdout, error: winResult.stderr };
       case 'linux':
       case 'darwin':
-        const macResult = await execProm(`kill -9 ${pid}`);
-        
+        const macResult = await execProm(`kill -9 ${tempPid}`);
+
         return { result: macResult.stdout, error: macResult.stderr };
       default:
         throw new Error(OSErrMsg);
