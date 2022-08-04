@@ -36,7 +36,7 @@ const OSErrMsg = 'Operating system is not supported';
  * getLinuxProc();
  * @returns {ProcessOutputFormat} Returns the list of processes or any errors encountered.
  */
-async function getLinuxProc() {
+async function getLinuxProc() { // In progress. Not tested
   const out = [];
   try {
     const files = await readdir('/proc/');
@@ -85,9 +85,9 @@ async function getLinuxProc() {
  * getProcList();
  * @returns {ProcessOutputFormat} Returns the list of processes or any errors encountered.
  */
-exports.getProcList = async () => {
+export async function getProcList() {
   try {
-    switch (plat) { // Make platform dependent ver ?
+    switch (plat) { // Make platform dependent var ?
       case 'win32':
         const winResult = await execProm('C:/Windows/System32/tasklist.exe /FO CSV');
         const winProcesses = winResult.stdout.trim()
@@ -116,7 +116,7 @@ exports.getProcList = async () => {
     }
     return { processes: null, error: ex.message };
   }
-};
+}
 
 /*
  * Kills a process by its PID
@@ -156,8 +156,9 @@ exports.getProcList = async () => {
  * killProcByPID('5321');
  * @returns {KillOutputFormat} Returns whether the operation was successful
  */
-exports.killProcByPID = async (pid) => {
+export async function killProcByPID(pid) {
   const tempPid = parseInt(pid, 10);
+
   if (!Number.isInteger(tempPid)) {
     return { result: null, error: 'PID is not a number' };
   }
@@ -182,4 +183,4 @@ exports.killProcByPID = async (pid) => {
     }
     return { result: null, error: ex.message };
   }
-};
+}
